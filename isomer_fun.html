@@ -1,0 +1,302 @@
+<html>
+
+<head>
+    <script src="dist/isomer.min.js"></script>
+    <style>
+    #isoworld {
+        width: 1000px;
+        height: 600px;
+    }
+    </style>
+</head>
+
+<body>
+    <canvas width="2000" height="1200" id="isoworld"></canvas>
+</body>
+<script>
+// see http://jdan.github.io/isomer/playground/
+
+var Point = Isomer.Point;
+var Path = Isomer.Path;
+var Shape = Isomer.Shape;
+var Vector = Isomer.Vector;
+var Color = Isomer.Color;
+var scale = .2;
+
+async function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function rnd(num) {
+    return Math.floor(Math.random() * num);
+}
+
+var iso = new Isomer(document.getElementById("isoworld"));
+
+//var x = [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null];
+//var y = [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null];
+//var z = [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null];
+iso.grid = {};
+
+iso.add_safe = function(shapes) {
+    shapes.forEach(s => {
+        if (s.type === 'cube') {
+            var pos = s.x + ',' + s.y + ',' + s.z; //sigh, arrays suck in js
+            //if it's an empty grid cell
+            if (iso.grid[pos] !== undefined) {
+                //console.log('already shape at grid', iso.grid, s);
+            } else { //empty space
+                iso.grid[pos] = s;
+            }
+        }
+    });
+    //console.log('add_safe', iso.grid);
+};
+
+iso.add_now = function(shapes) {
+    shapes.forEach(s => {
+    	var pos = s.x + ',' + s.y + ',' + s.z; //sigh, arrays suck in js
+        if (s.type === 'cube') {
+        	if(s.x > -5 && s.x < 20 && s.y > -5 && s.y < 20 && s.z > -5 && s.z < 20) { //inbounds, tbd cleanup
+                iso.grid[pos] = s;
+                iso.add(s, s.color);
+            }
+        }
+    });
+};
+
+iso.sort_grid = function() { //sort for render, back to front, then up
+    var tmpg = [];
+    Object.entries(iso.grid).forEach((s) => {
+        tmpg.push([s[1].x, s[1].y, s[1].z, s[1]]);
+
+    }); //sort back to front
+    tmpg.sort((a, b) => { return b[1] - a[1] }); //then sort by y
+    tmpg.sort((a, b) => { return b[0] - a[0] }); //then sort by x
+    tmpg.sort((a, b) => { return a[2] - b[2] }); //sort by z
+
+    return tmpg;
+}
+
+var canvas = document.getElementById('isoworld');
+var context = canvas.getContext('2d');
+
+iso.clear_grid = function() { //sort for render, back to front, then up
+    
+	context.clearRect(0,0,context.canvas.width,context.canvas.height);
+	//iso.grid = {};
+}
+
+var rotation = 1.0;
+
+iso.redraw_grid = async function(args) {
+	
+	//if(args && args.clear) { iso.clear_grid(); }
+	iso.clear_grid();
+    
+    var grid_arr = iso.sort_grid();
+    rotation += 0.001;
+
+    for (var i = 0; i < grid_arr.length; i++) {
+        s = grid_arr[i];
+        //fun delay
+        //await sleep(100);
+        shape = s[3]; //should be 4th in array
+        // rotate
+        /* (1.5, 1.5) is the center of the prism */
+        var color = shape.color;
+        shape = shape.rotateZ(Point(1, 1, 0), Math.PI+rotation).translate(0, 0, 0);
+        iso.add(shape, color);
+    }
+
+    // grid_arr.forEach(async(s) => { <-- sucks at async
+    // 	//fun delay
+    // 	await sleep(100);
+    //     shape = s[3];//should be 4th in array
+    //     iso.add(shape, shape.color);
+
+    // });
+
+}
+
+iso.cube = function(x, y, z, c) {
+    var s = Shape.Prism(Point(x, y, z));
+    s.color = c;
+    s.x = x;
+    s.y = y;
+    s.z = z;
+    s.type = 'cube';
+    return s;
+};
+
+var green = new Color(50, 160, 50);
+var yellow = new Color(160, 160, 50);
+
+var red = new Color(160, 60, 50);
+var blue = new Color(50, 60, 160);
+
+document.iso = iso;
+window.iso = iso;
+
+async function demo() {
+    console.log('demo');
+    iso.grid = {};
+    var height = 0;
+    var cu = {};
+    var steps = 0;
+    var cubes = { 0: [], 1: [], 2: []};
+    //var cubes2 = [];
+    //var cubes3 = [];
+    //var cubes4 = [];
+    for (var s = 0; s < 40; s++) {
+    	c1 = [200, 100, 100], c2 = [100, 200, 100], c3 = [100, 200, 100];
+        //console.log('cu',cu);
+        var r = rnd(255),
+            g = rnd(255),
+            b = rnd(255);
+
+        // cu['c'] = new Color(r, g, b);
+        // cu['x'] += rnd(3) - 1; //move one square
+        // cu['y'] += rnd(3) - 1;
+        // var cube = Shape.Prism(Point(cu['x'], cu['y'], cu['z']));
+        // cube.color = cu['c'];
+        //layers
+        var cube = [];
+        cube[0] = iso.cube(rnd(10), rnd(10), 1, new Color(c1[0]-rnd(100), c1[1]+rnd(0), c1[2]+rnd(1)));
+        cube[1] = iso.cube(rnd(10), rnd(10), 2, new Color(c1[0]+rnd(0), c1[1]-rnd(50), c1[2]+rnd(1)));
+        cube[2] = iso.cube(rnd(10), rnd(10), 3, new Color(c1[0]+rnd(0), c1[1]+rnd(100), c1[2]+rnd(100)));
+        // cubes[s] = cube; //unused
+        cubes[0][s] = cube[0];
+        cubes[1][s] = cube[1];
+        cubes[2][s] = cube[2];
+    };
+
+    iso.add_safe(cubes[0]);
+    iso.add_safe(cubes[1]);
+    iso.add_safe(cubes[2]);
+    iso.redraw_grid();
+}
+
+async function demo2() {
+    console.log('demo2');
+    var c1 = [200, 100, 100], c2 = [100, 200, 100], c3 = [100, 200, 100];
+
+    var cu = {'x':0, 'y':0, 'z':2, 'c':''}, to1 = {}, to2 = {};
+    var cube_arr = [];
+
+    var r = rnd(50),
+        g = rnd(50),
+        b = rnd(50);
+    var times = 50 + rnd(20);
+
+    for (var s = 0; s < times; s++) {
+    	(r < 240) ? r += rnd(10) : r -= rnd(10);
+    	(g < 240) ? g += rnd(10) : g -= rnd(10); 
+    	(b < 240) ? b += rnd(10) : b -= rnd(10);
+
+        cu['c'] = new Color(r, g, b);
+        cu['x'] += rnd(3) - 1; //move one square
+        cu['y'] += rnd(3) - 1;
+        cu['z'] += rnd(3) - 1;
+
+        to2 = to1;
+        to1 = cu;
+
+        var cube = iso.cube(cu['x'], cu['y'], cu['z'], cu['c']); // x , y , z , color
+        //cube_arr.push(cube); //wrap
+        //iso.add_safe(cube_arr);
+        iso.add_safe([cube]);
+        //iso.add_now([cube]);
+        iso.redraw_grid();
+        await sleep(1);
+    };
+    return new Promise(resolve => resolve());
+}
+
+async function loop() {
+	var x = 0;
+	while(x < 1) {
+		await sleep(10);
+		demo();
+		x++;
+	}
+
+}
+
+async function loop2() {
+	var x = 0; iso.halt = false;
+	while(x < 1000 && iso.halt === false) {
+		if(rnd(20) === 1 || Object.entries(iso.grid).length > 300) { 
+			iso.clear_grid();
+			iso.grid = {}
+		} else {
+			await demo2();
+			x++; 
+		}
+	}
+}
+
+loop2();
+
+// Sleep in loop
+//   while (height < 20) {
+//     //if (i === 3)
+//       ///await sleep(500);
+//       height = height+0.1;
+//       console.log(height);
+
+//       pizza = Shape.extrude(new Path([
+//             Point(1, 1, 1),
+//             Point(2, 1, 1),
+//             Point(2, 3, 1)
+//         ]), height);
+//         iso.add(pizza, green);
+
+
+
+// iso.add(Shape.Prism(Point.ORIGIN, 10, 10, 1)); // 'ground'
+// iso.add(Shape.Pyramid(Point(0, 0, 1)), green);
+// iso.add(Shape.Pyramid(Point(10, 0, 1)), red);
+// iso.add(Shape.Pyramid(Point(0, 10, 1)), yellow);
+// iso.add(Shape.Pyramid(Point(10, 10, 1)), blue);
+
+
+// iso.add(Shape.Prism(Point.ORIGIN, 3, 3, 1));
+// iso.add(Shape.Prism(Point(2, 2, 3)), blue);
+// // iso.add(Shape.Pyramid(Point(0, 2, 1)), red);
+// var shape = Shape.Pyramid(Point(1, 2, 1));
+
+// iso.add(shape, red);
+
+
+
+// iso.add(Shape.Pyramid(Point(11, 12, 1)), green);
+// iso.add(Shape.Pyramid(Point(10, 12, 1)), green);
+
+// iso.add(Shape.Pyramid(Point(12, 11, 1)), green);
+// iso.add(Shape.Pyramid(Point(11, 11, 1)), green);
+// iso.add(Shape.Pyramid(Point(10, 11, 1)), green);
+
+// iso.add(Shape.Pyramid(Point(12, 10, 1)), green);
+// iso.add(Shape.Pyramid(Point(11, 10, 1)), green);
+// iso.add(Shape.Pyramid(Point(10, 10, 1)), green);
+
+// iso.add(Shape.Prism(Point.ORIGIN, 3, 3, 1));
+
+// var pizza = Shape.extrude(new Path([
+//   Point(1, 1, 1),
+//   Point(2, 1, 1),
+//   Point(2, 3, 1)
+// ]), 0.5)
+// iso.add(Shape.extrude(new Path([
+//   Point(1, 1, 1),
+//   Point(2, 1, 1),
+//   Point(2, 3, 1)
+// ]), 0.5), green);
+
+// iso.add(pizza, green);
+
+//     }
+</script>
+
+</html>
