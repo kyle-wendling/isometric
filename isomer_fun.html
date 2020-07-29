@@ -29,7 +29,7 @@ async function sleep(ms) {
 }
 
 function rnd(num) {
-    return Math.floor(Math.random() * num);
+    return ~~(Math.random() * (num))
 }
 
 var iso = new Isomer(document.getElementById("isoworld"));
@@ -89,8 +89,8 @@ iso.clear_grid = function() { //sort for render, back to front, then up
 	//iso.grid = {};
 }
 
-var rotation = 1.0;
-const roation_speed = Math.PI/360;
+var rotation = 1.0, rot = false;
+const roation_speed = 0.001;
 
 iso.redraw_grid = async function(args) {
 	
@@ -98,7 +98,7 @@ iso.redraw_grid = async function(args) {
 	iso.clear_grid();
     
     var grid_arr = iso.sort_grid();
-    rotation += roation_speed;
+    if(rot) rotation += roation_speed;
     //if(rotation > Math.PI) rotation = 1.0;
 
     for (var i = 0; i < grid_arr.length; i++) {
@@ -285,7 +285,10 @@ async function loop() {
 }
 
 async function loop2() {
-	var x = 0; iso.halt = false; var times = 20;
+	var x = 0; iso.halt = false; var times = 10;
+    iso.clear_grid();
+    iso.grid = {};
+
 	while(x <= times && iso.halt === false) {
 		if(rnd(20) === 1 || Object.entries(iso.grid).length > 200) { 
 			iso.clear_grid();
@@ -293,39 +296,37 @@ async function loop2() {
 		} else {
 			await demo2();
 		}
-        x++;  console.log('loop2 x',x);
+        x++;
         if(x === times) {console.log('loop2 done'); return;}
 	}
     console.log('loop2 outter x',x);
 }
 async function pinch() {
     console.log('pinch')
-    var x = 0; iso.halt = false;  var times = 200;
+    var x = 0; iso.halt = false;  var times = 1000;
     iso.clear_grid();
     iso.grid = {}
     await demo_pinch();
 
-    while(x <= times && iso.halt === false) {
-        if(rnd(70) === 1) {
+    while(x <= times) {
+        if(rnd(100) === 1) {
             //iso.grid = {}
             iso.clear_grid();
             iso.grid = {};
-            demo_pinch();
+            await demo_pinch();
         } else {
             await iso.redraw_grid();
-            await sleep(3);
-            console.log(x++); 
+            await sleep(1);
         }
-        if(x === times) {console.log('pinch done'); return;}
-        
+        x++;
+        if(x === times || iso.halt) {console.log('pinch done'); return;}
     }
-    
-    
-    
 }
 
 async function full_demo() {
     while(1) {
+        if(iso.halt) return;
+        if(rnd(2) === 1) { rot = true} else {rot = false; }
         if(rnd(2) === 1) {
             await pinch();
         } else {
