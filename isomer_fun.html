@@ -218,14 +218,16 @@ async function demo2() {
 }
 
 
-async function demo_pinch() {
+async function demo_pinch(delay) {
     console.log('demo_pinch');
+
+    if(!delay) delay = 0;
 
     var cu = {'x':0, 'y':0, 'z':2, 'c':''}, to1 = {}, to2 = {};
     var cube_arr = [];
     var pinch = [[0,5],[0,4],[0,3],[0,2],[0,1],
                  [1,5],[1,3],
-                 [2,4], //p
+                 [2,5],[2,4],[2,3], //p
 
                  [4,1],[4,5],
                  [5,5],[5,4],[5,3],[5,2],[5,1],
@@ -268,8 +270,9 @@ async function demo_pinch() {
         //cube_arr.push(cube); //wrap
         //iso.add_safe(cube_arr);
         iso.add_safe([cube]);
+        iso.redraw_grid();
         //iso.add_now([cube]);
-        //await sleep(1);
+        await sleep(delay/s);
     };
     return new Promise(resolve => resolve());
 }
@@ -301,9 +304,9 @@ async function loop2() {
 	}
     console.log('loop2 outter x',x);
 }
-async function pinch() {
+async function pinch(delay) {
     console.log('pinch')
-    var x = 0; iso.halt = false;  var times = 1000;
+    var x = 0; iso.halt = false;  var times = 200;
     iso.clear_grid();
     iso.grid = {}
     await demo_pinch();
@@ -313,7 +316,7 @@ async function pinch() {
             //iso.grid = {}
             iso.clear_grid();
             iso.grid = {};
-            await demo_pinch();
+            await demo_pinch(delay);
         } else {
             await iso.redraw_grid();
             await sleep(1);
@@ -325,15 +328,18 @@ async function pinch() {
 
 async function full_demo() {
     await loop2();
-    await pinch();
+    iso.clear_grid(); iso.grid = {};
+    await demo_pinch(5000);
     rot = true
     await pinch();
     while(1) {
         if(iso.halt) return;
-        if(rnd(2) === 1) { rot = true} else {rot = false; }
+        
         if(rnd(2) === 1) {
+            rot = true;
             await pinch();
         } else {
+            if(rnd(2) === 1) { rot = true} else {rot = false; }
             await loop2();
         }
     }
