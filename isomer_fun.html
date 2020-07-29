@@ -285,7 +285,7 @@ async function loop() {
 }
 
 async function loop2() {
-	var x = 0; iso.halt = false; var times = 10;
+	var x = 0; iso.halt = false; var times = 5;
     iso.clear_grid();
     iso.grid = {};
 
@@ -324,6 +324,10 @@ async function pinch() {
 }
 
 async function full_demo() {
+    await loop2();
+    await pinch();
+    rot = true
+    await pinch();
     while(1) {
         if(iso.halt) return;
         if(rnd(2) === 1) { rot = true} else {rot = false; }
