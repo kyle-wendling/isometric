@@ -1,4 +1,4 @@
 
-Try this(/isomer_fun.html)
+Try this(isomer_fun.html)
 
 - cheers kyle
